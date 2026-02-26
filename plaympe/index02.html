@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Player - The Lone Bellow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a2332 0%, #0f1419 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        
+        .sidebar {
+            background: #0a0e13;
+            border-right: 1px solid #1f2937;
+        }
+        
+        .album-art {
+            background: linear-gradient(135deg, #4a9fd8 0%, #2d5f7f 100%);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+        
+        .player-controls {
+            background: #0f1419;
+            border-top: 1px solid #1f2937;
+        }
+        
+        .track-row:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .progress-bar {
+            height: 4px;
+            background: #374151;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #60a5fa;
+            transition: width 0.1s linear;
+        }
+        
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+        }
+        
+        input[type="range"]::-webkit-slider-track {
+            height: 4px;
+            background: #374151;
+            border-radius: 2px;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            background: #60a5fa;
+            border-radius: 50%;
+            cursor: pointer;
+            margin-top: -4px;
+        }
+        
+        input[type="range"]::-moz-range-track {
+            height: 4px;
+            background: #374151;
+            border-radius: 2px;
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            background: #60a5fa;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: #3b82f6;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+        
+        .btn-outline {
+            border: 1px solid #4b5563;
+            transition: all 0.2s;
+        }
+        
+        .btn-outline:hover {
+            border-color: #60a5fa;
+            color: #60a5fa;
+        }
+        
+        .login-container {
+            background: rgba(15, 20, 25, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        
+        .download-menu {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            min-width: 150px;
+            margin-top: 4px;
+        }
+        
+        .download-menu button {
+            width: 100%;
+            text-align: left;
+            padding: 10px 16px;
+            color: #d1d5db;
+            transition: all 0.2s;
+            border-bottom: 1px solid #374151;
+        }
+        
+        .download-menu button:last-child {
+            border-bottom: none;
+        }
+        
+        .download-menu button:hover {
+            background: #374151;
+            color: white;
+        }
+    </style>
+</head>
+<body class="h-screen overflow-hidden">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="fixed inset-0 flex items-center justify-center z-50">
+        <div class="login-container p-8 rounded-lg shadow-2xl w-96 border border-gray-700">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-white">Player</h1>
+                    <p class="text-gray-400 text-sm">Premium Music Player</p>
+                </div>
+            </div>
+            
+            <div id="loginError" class="hidden bg-red-500/10 border border-red-500/50 text-red-500 px-4 py-2 rounded mb-4 text-sm"></div>
+            
+            <input type="text" id="username" placeholder="Username" 
+                   class="w-full bg-gray-800 text-white px-4 py-3 rounded mb-3 border border-gray-700 focus:border-blue-500 focus:outline-none">
+            <input type="password" id="password" placeholder="Password" 
+                   class="w-full bg-gray-800 text-white px-4 py-3 rounded mb-4 border border-gray-700 focus:border-blue-500 focus:outline-none">
+            
+            <button onclick="login()" class="w-full btn-primary text-white py-3 rounded font-semibold">
+                Login
+            </button>
+            
+            <div class="mt-6 pt-6 border-t border-gray-700">
+                <p class="text-gray-400 text-sm mb-2">Demo Credentials:</p>
+                <div class="text-xs text-gray-500 space-y-1">
+
+                    <div>• demo / demo123</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="hidden h-full flex flex-col">
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Sidebar -->
+            <div class="sidebar w-48 p-4 flex flex-col">
+                <div class="flex items-center gap-3 mb-8">
+                    <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-white font-bold">Player</h1>
+                        <p class="text-gray-500 text-xs">Premium Music Player</p>
+                    </div>
+                </div>
+                
+                <nav class="space-y-1 flex-1">
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        </svg>
+                        <span class="text-sm">Releases</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                        </svg>
+                        <span class="text-sm">Playlists</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"></path>
+                        </svg>
+                        <span class="text-sm">Flagged</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
+                        </svg>
+                        <span class="text-sm">Archived</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span class="text-sm">History</span>
+                    </a>
+                </nav>
+                
+                <div class="mt-auto">
+                    <div class="bg-gray-800 rounded p-3 mb-3">
+                        <p class="text-xs text-gray-400 mb-1">Play Queue</p>
+                        <p class="text-xs text-gray-500">CURRENTLY PLAYING</p>
+                        <p class="text-white text-sm font-semibold mt-1" id="queueTrack">The Sea</p>
+                        <p class="text-gray-400 text-xs">Allan Austen Bishop</p>
+                    </div>
+                    <button onclick="logout()" class="w-full text-gray-400 hover:text-white text-sm py-2 px-3 hover:bg-gray-800 rounded">
+                        Logout
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="flex-1 overflow-auto p-8">
+                <div class="max-w-6xl mx-auto">
+                    <!-- Breadcrumb -->
+                    <div class="text-gray-400 text-sm mb-6">
+                        Releases / Release Information / I Did It For Love
+                    </div>
+
+                    <!-- Album Header -->
+                    <div class="flex gap-8 mb-8">
+                        <div class="album-art rounded-lg overflow-hidden w-80 h-80 flex-shrink-0">
+                            <svg viewBox="0 0 300 300" class="w-full h-full">
+                                <defs>
+                                    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#4a9fd8;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#2d5f7f;stop-opacity:1" />
+                                    </linearGradient>
+                                </defs>
+                                <rect width="300" height="300" fill="url(#skyGrad)"/>
+                                <text x="30" y="100" fill="white" font-size="60" font-weight="bold" font-family="Arial">
+                                    <tspan x="30" dy="0">THE</tspan>
+                                    <tspan x="30" dy="50">LONE</tspan>
+                                    <tspan x="30" dy="50">BELLOW</tspan>
+                                </text>
+                                <path d="M 50 200 Q 150 180 250 200" fill="none" stroke="#f4e4c1" stroke-width="3"/>
+                                <path d="M 50 210 Q 150 230 250 210" fill="#f4c542" stroke="none"/>
+                                <path d="M 50 210 Q 150 230 250 210 L 250 280 L 50 280 Z" fill="#e85d3c" stroke="none"/>
+                                <ellipse cx="100" cy="240" rx="20" ry="30" fill="#2a4a5a"/>
+                                <ellipse cx="200" cy="240" rx="20" ry="30" fill="#2a4a5a"/>
+                                <text x="150" y="270" fill="white" font-size="12" text-anchor="middle" font-weight="bold">I DID IT</text>
+                                <text x="150" y="285" fill="white" font-size="12" text-anchor="middle" font-weight="bold">FOR LOVE</text>
+                            </svg>
+                        </div>
+
+                        <div class="flex-1">
+                            <h1 class="text-4xl font-bold text-white mb-2">What Do You Mean</h1>
+                            <h2 class="text-2xl text-gray-300 mb-6">Justin Bieber</h2>
+                            
+                            <div class="space-y-2 text-gray-400 mb-6">
+                                <p><span class="text-gray-500">Available Date:</span> January 16, 2026</p>
+                                <p><span class="text-gray-500">Impact Date:</span> January 20, 2025</p>
+                                <p><span class="text-gray-500">Genre:</span> Americana / NPR / Non-Commercial / Triple A</p>
+                            </div>
+
+                            <div class="flex gap-3">
+                                <button class="btn-primary px-6 py-2 rounded text-white font-semibold">
+                                    Share Release
+                                </button>
+                                <button onclick="downloadAll('wav')" class="btn-outline px-6 py-2 rounded text-gray-300">
+                                    Download all (WAV)
+                                </button>
+                                <button onclick="downloadAll('mp3')" class="btn-outline px-6 py-2 rounded text-gray-300">
+                                    Download all (MP3)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabs -->
+                    <div class="border-b border-gray-700 mb-6">
+                        <div class="flex gap-6">
+                            <button class="px-4 py-3 text-white border-b-2 border-blue-500 font-semibold">Tracklist</button>
+                            <button class="px-4 py-3 text-gray-400 hover:text-white">Metadata</button>
+                            <button class="px-4 py-3 text-gray-400 hover:text-white">Attachments</button>
+                        </div>
+                    </div>
+
+                    <!-- Tracks -->
+                    <div class="bg-gray-900/30 rounded-lg p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-white font-semibold">Tracks (2)</h3>
+                            <button class="text-sm text-gray-400 hover:text-white px-4 py-1 border border-gray-600 rounded">
+                                ▶ Play All
+                            </button>
+                        </div>
+
+                        <div id="trackList" class="space-y-1"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Album Art Preview -->
+            <div class="w-96 p-6 bg-gray-900/50">
+                <div class="bg-white rounded-lg overflow-hidden shadow-2xl">
+                    <svg viewBox="0 0 400 600" class="w-full">
+                        <defs>
+                            <linearGradient id="previewSky" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#4a9fd8;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#2d5f7f;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <rect width="400" height="300" fill="url(#previewSky)"/>
+                        <text x="50" y="120" fill="white" font-size="80" font-weight="bold" letter-spacing="5">
+                            <tspan x="50" dy="0">L</tspan>
+                            <tspan x="50" dy="80">O</tspan>
+                            <tspan x="50" dy="80">W</tspan>
+                        </text>
+                        <path d="M 50 280 Q 200 260 350 280" fill="none" stroke="#f4e4c1" stroke-width="4"/>
+                        <path d="M 50 290 Q 200 310 350 290" fill="#f4c542"/>
+                        <path d="M 50 290 Q 200 310 350 290 L 350 300 L 50 300 Z" fill="#e85d3c"/>
+                        <ellipse cx="120" cy="270" rx="25" ry="35" fill="#2a4a5a"/>
+                        <ellipse cx="280" cy="270" rx="25" ry="35" fill="#2a4a5a"/>
+                        <rect y="300" width="400" height="300" fill="white"/>
+                        <text x="200" y="400" fill="#1a1a1a" font-size="32" font-weight="bold" text-anchor="middle">The Lone Bellow</text>
+                        <text x="200" y="480" fill="#1a1a1a" font-size="24" text-anchor="middle">"I Did It For Love"</text>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Player Controls -->
+        <div class="player-controls px-6 py-4">
+            <div class="flex items-center gap-6">
+                <!-- Current Track Info -->
+                <div class="flex items-center gap-4 w-64">
+                    <div class="w-14 h-14 bg-gradient-to-br from-blue-400 to-blue-600 rounded flex-shrink-0"></div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-white font-semibold text-sm truncate" id="currentTrackName">The Sea</p>
+                        <p class="text-gray-400 text-xs truncate" id="currentArtist">Allan Austen Bishop</p>
+                    </div>
+                </div>
+
+                <!-- Player Controls -->
+                <div class="flex-1 flex flex-col items-center gap-2">
+                    <div class="flex items-center gap-4">
+                        <button onclick="previousTrack()" class="text-gray-400 hover:text-white">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z"/>
+                            </svg>
+                        </button>
+                        <button onclick="togglePlay()" id="playBtn" class="w-10 h-10 bg-white rounded-full flex items-center justify-center hover:scale-105 transition">
+                            <svg class="w-5 h-5 text-black ml-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
+                            </svg>
+                        </button>
+                        <button onclick="nextTrack()" class="text-gray-400 hover:text-white">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 11.202V14a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4A1 1 0 0010 6v2.798l-5.445-3.63z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <div class="flex items-center gap-3 w-full max-w-2xl">
+                        <span class="text-xs text-gray-400 w-10 text-right" id="currentTime">0:00</span>
+                        <input type="range" id="progressBar" min="0" max="100" value="0" class="flex-1">
+                        <span class="text-xs text-gray-400 w-10" id="duration">5:41</span>
+                    </div>
+                </div>
+
+                <!-- Volume and Options -->
+                <div class="flex items-center gap-4 w-64 justify-end">
+                    <button class="text-gray-400 hover:text-white">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
+                        </svg>
+                    </button>
+                    <button class="text-gray-400 hover:text-white">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9 6.5v1.55a2.308 2.308 0 01-.963-.087 2.09 2.09 0 01-.768-.518c-.365-.365-.593-.858-.593-1.445 0-.587.228-1.08.593-1.445a2.09 2.09 0 01.768-.518A2.308 2.308 0 019 4.05v1.55zm2 0v1.55a2.308 2.308 0 00.963-.087c.323-.11.599-.284.768-.518.365-.365.593-.858.593-1.445 0-.587-.228-1.08-.593-1.445a2.09 2.09 0 00-.768-.518A2.308 2.308 0 0011 4.05v1.55z" clip-rule="evenodd"/>
+                        </svg>
+                    </button>
+                    <button class="text-gray-400 hover:text-white">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                        </svg>
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clip-rule="evenodd"/>
+                        </svg>
+                        <input type="range" id="volumeSlider" min="0" max="100" value="70" class="w-24">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <audio id="audioPlayer"></audio>
+
+    <script>
+        // Login credentials
+        const CREDENTIALS = [
+            { username: 'admin', password: 'admin123' },
+            { username: 'user', password: 'user123' },
+            { username: 'demo', password: 'demo123' }
+        ];
+
+        // Track data - UPDATE THESE PATHS TO YOUR ACTUAL FILES
+        const tracks = [
+            {
+                id: 1,
+                title: 'What Do You Mean',
+                artist: 'Justin Bieber',
+                duration: '04:19',
+                durationSeconds: 259,
+                // Replace with your actual file paths
+                audioUrl: 'test01.mp3',
+                wavUrl: 'test01.mp3',
+                mp3Url: 'test01.mp3'
+            }
+        
+        ];
+
+        let currentTrackIndex = 0;
+        let isPlaying = false;
+        let openMenuIndex = null;
+        const audioPlayer = document.getElementById('audioPlayer');
+
+        // Login functionality
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('loginError');
+
+            const validUser = CREDENTIALS.find(
+                cred => cred.username === username && cred.password === password
+            );
+
+            if (validUser) {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                errorDiv.classList.add('hidden');
+                renderTracks();
+                loadTrack(0);
+            } else {
+                errorDiv.textContent = 'Invalid username or password';
+                errorDiv.classList.remove('hidden');
+            }
+        }
+
+        function logout() {
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            pauseAudio();
+        }
+
+        // Enter key support for login
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('password').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') login();
+            });
+        });
+
+        // Render tracks
+        function renderTracks() {
+            const trackList = document.getElementById('trackList');
+            trackList.innerHTML = tracks.map((track, index) => `
+                <div class="track-row flex items-center gap-4 px-4 py-3 rounded cursor-pointer" onclick="playTrack(${index})">
+                    <span class="text-gray-400 w-8">${track.id}</span>
+                    <div class="flex-1">
+                        <p class="text-white font-semibold">${track.title}</p>
+                        <p class="text-gray-400 text-sm">${track.artist}</p>
+                    </div>
+                    <span class="text-gray-400 text-sm">${track.duration}</span>
+                    <div class="relative">
+                        <button onclick="toggleMenu(${index}, event)" class="text-gray-400 hover:text-white p-2" id="menuBtn-${index}">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+                            </svg>
+                        </button>
+                        <div id="menu-${index}" class="download-menu hidden">
+                            <button onclick="downloadFormat(${index}, 'wav', event)">
+                                <span class="text-sm">Download WAV</span>
+                            </button>
+                            <button onclick="downloadFormat(${index}, 'mp3', event)">
+                                <span class="text-sm">Download MP3</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Toggle download menu
+        function toggleMenu(index, event) {
+            event.stopPropagation();
+            
+            // Close any open menus
+            if (openMenuIndex !== null && openMenuIndex !== index) {
+                document.getElementById(`menu-${openMenuIndex}`).classList.add('hidden');
+            }
+            
+            const menu = document.getElementById(`menu-${index}`);
+            menu.classList.toggle('hidden');
+            openMenuIndex = menu.classList.contains('hidden') ? null : index;
+        }
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (event) => {
+            if (openMenuIndex !== null && !event.target.closest('.relative')) {
+                document.getElementById(`menu-${openMenuIndex}`).classList.add('hidden');
+                openMenuIndex = null;
+            }
+        });
+
+        // Download specific format
+        function downloadFormat(index, format, event) {
+            event.stopPropagation();
+            const track = tracks[index];
+            const url = format === 'wav' ? track.wavUrl : track.mp3Url;
+            const extension = format.toUpperCase();
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${track.artist} - ${track.title}.${format}`;
+            a.click();
+            
+            // Close the menu
+            document.getElementById(`menu-${index}`).classList.add('hidden');
+            openMenuIndex = null;
+        }
+
+        // Load track
+        function loadTrack(index) {
+            currentTrackIndex = index;
+            const track = tracks[index];
+            audioPlayer.src = track.audioUrl;
+            document.getElementById('currentTrackName').textContent = track.title;
+            document.getElementById('currentArtist').textContent = track.artist;
+            document.getElementById('queueTrack').textContent = track.title;
+            document.getElementById('duration').textContent = track.duration;
+        }
+
+        // Play track
+        function playTrack(index) {
+            loadTrack(index);
+            playAudio();
+        }
+
+        // Toggle play/pause
+        function togglePlay() {
+            if (isPlaying) {
+                pauseAudio();
+            } else {
+                playAudio();
+            }
+        }
+
+        function playAudio() {
+            audioPlayer.play();
+            isPlaying = true;
+            const playBtn = document.getElementById('playBtn');
+            playBtn.innerHTML = `
+                <svg class="w-5 h-5 text-black" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+            `;
+        }
+
+        function pauseAudio() {
+            audioPlayer.pause();
+            isPlaying = false;
+            const playBtn = document.getElementById('playBtn');
+            playBtn.innerHTML = `
+                <svg class="w-5 h-5 text-black ml-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
+                </svg>
+            `;
+        }
+
+        // Next/Previous track
+        function nextTrack() {
+            currentTrackIndex = (currentTrackIndex + 1) % tracks.length;
+            loadTrack(currentTrackIndex);
+            if (isPlaying) playAudio();
+        }
+
+        function previousTrack() {
+            currentTrackIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
+            loadTrack(currentTrackIndex);
+            if (isPlaying) playAudio();
+        }
+
+        // Progress bar
+        audioPlayer.addEventListener('timeupdate', () => {
+            const progress = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+            document.getElementById('progressBar').value = progress || 0;
+            
+            const minutes = Math.floor(audioPlayer.currentTime / 60);
+            const seconds = Math.floor(audioPlayer.currentTime % 60);
+            document.getElementById('currentTime').textContent = 
+                `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        });
+
+        document.getElementById('progressBar').addEventListener('input', (e) => {
+            const time = (e.target.value / 100) * audioPlayer.duration;
+            audioPlayer.currentTime = time;
+        });
+
+        // Volume control
+        document.getElementById('volumeSlider').addEventListener('input', (e) => {
+            audioPlayer.volume = e.target.value / 100;
+        });
+
+        // Auto play next track
+        audioPlayer.addEventListener('ended', nextTrack);
+
+        // Download track
+        function downloadTrack(index, event) {
+            event.stopPropagation();
+            const track = tracks[index];
+            const a = document.createElement('a');
+            a.href = track.audioUrl;
+            a.download = `${track.artist} - ${track.title}.mp3`;
+            a.click();
+        }
+
+        // Download all tracks
+        function downloadAll(format) {
+            tracks.forEach((track, index) => {
+                setTimeout(() => {
+                    downloadTrack(index, { stopPropagation: () => {} });
+                }, index * 500);
+            });
+        }
+    </script>
+</body>
+</html>
